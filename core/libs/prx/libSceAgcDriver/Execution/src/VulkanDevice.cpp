@@ -27,6 +27,7 @@
 #include "prx/libSceAgcDriver/Execution/include/Float32FlushControl.hpp"
 #include "prx/libSceAgcDriver/Execution/include/PipelineLinkOptimization.hpp"
 #include "prx/libSceAgcDriver/Execution/include/DrawInputsInPlace.hpp"
+#include "prx/libSceAgcDriver/Execution/include/ShiftAmountWrap.hpp"
 #include "prx/libSceAgcDriver/Execution/include/SubgroupBarrier.hpp"
 #include "prx/libSceAgcDriver/Execution/include/TessellationPipelineCache.hpp"
 #include "prx/libSceAgcDriver/Execution/include/SubgroupClock.hpp"
@@ -558,6 +559,7 @@ struct VulkanDevice::State {
     bool fragmentShaderBarycentric = false;
     bool shaderTerminateInvocation = false;
     bool fusedExactArithmetic = false;
+    bool wrapShiftAmounts = false;
     bool fragmentBarycentricBuiltins = false;
     bool hostInterpolationFirst = false;
     bool geometryShader = false;
@@ -1590,6 +1592,7 @@ VulkanDevice::VulkanDevice(const PresentationWindow* window, bool compileOnly) :
         state->driverId = driver.driverID;
         state->individuallyFreeDescriptorSets = driver.driverID == VK_DRIVER_ID_MESA_LLVMPIPE;
         state->fusedExactArithmetic = driver.driverID == VK_DRIVER_ID_MOLTENVK;
+        state->wrapShiftAmounts = WrapShiftAmounts(driver.driverID, state->properties.driverVersion);
         state->tessellationPipelineCache = TessellationPipelineCacheUsable(driver.driverID);
         state->hostInterpolationFirst = HostInterpolationPreferred(driver.driverID) && std::getenv("APS5_NO_HOST_INTERPOLATION_FIRST") == nullptr;
         APS5_LOG_OUT("Pixel interpolation driver=%d hostInterpolationFirst=%d", static_cast<int>(driver.driverID), state->hostInterpolationFirst ? 1 : 0);
@@ -4566,6 +4569,7 @@ ShaderRecompiler::SpirvTarget VulkanDevice::Target() const {
     auto target = state->shaderProfile->Target();
     target.float32FlushToZero = state->float32FlushToZero && !state->float32FlushComputeOnly;
     target.fusedExactArithmetic = state->fusedExactArithmetic;
+    target.wrapShiftAmounts = state->wrapShiftAmounts;
     target.hostInterpolationFirst = state->hostInterpolationFirst;
     target.float32DenormPreserve = state->float32DenormPreserve;
     target.float16WidenNans = state->float16WidenNans;

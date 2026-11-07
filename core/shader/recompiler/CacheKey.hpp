@@ -377,6 +377,7 @@ private:
         append(key, value.float32DenormPreserve);
         append(key, value.exactRobustLoads);
         append(key, value.fusedExactArithmetic);
+        append(key, value.wrapShiftAmounts);
         append(key, value.largePixelFunctionLdsBuffer);
         append(key, value.pixelFunctionStorageDwords);
         append(key, value.deviceScopeLdsMemoryBarriers);

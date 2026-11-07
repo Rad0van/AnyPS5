@@ -26,7 +26,10 @@ namespace {
 
 }
 
+std::uint32_t WrapShiftAmountForHoneykrisp(SpirvEmitterState& state, std::uint32_t opcode, std::uint32_t type, std::uint32_t amount);
+
 std::uint32_t EmitBinaryU32(SpirvEmitterState& state, std::uint32_t opcode, std::uint32_t lhs, std::uint32_t rhs) {
+    rhs = WrapShiftAmountForHoneykrisp(state, opcode, TypeU32(state), rhs);
     const auto result = state.module.AllocateId();
     state.module.AddFunction(opcode, TypeU32(state), result, lhs, rhs);
     return result;

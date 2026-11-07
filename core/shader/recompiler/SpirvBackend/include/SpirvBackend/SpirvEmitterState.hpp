@@ -117,6 +117,7 @@ struct SpirvEmitterState {
     bool float32FlushToZero = false;
     bool float32DenormPreserve = false;
     bool fusedExactArithmetic = false;
+    bool wrapShiftAmounts = false;
     bool meshBarycentricPixel = false;
     bool meshBarycentricVertex = false;
     std::uint32_t barycentricSmoothLocation = 0xffffffffu;

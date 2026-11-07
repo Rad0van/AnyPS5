@@ -359,6 +359,7 @@ struct SpirvTarget {
     bool waveLdsMemoryBarriers = false;
     bool float32DenormPreserve = false;
     bool fusedExactArithmetic = false;
+    bool wrapShiftAmounts = false;
     bool largePixelFunctionLdsBuffer = false;
     std::uint32_t pixelFunctionStorageDwords = 4096u;
     bool deviceScopeLdsMemoryBarriers = false;

@@ -2091,7 +2091,22 @@ std::uint32_t Unary(SpirvEmitterState& state, std::uint32_t opcode, std::uint32_
     return result;
 }
 
+
+std::uint32_t WrapShiftAmountForHoneykrisp(SpirvEmitterState& state, std::uint32_t opcode, std::uint32_t type, std::uint32_t amount) {
+    if (!state.wrapShiftAmounts || type != TypeU32(state)) return amount;
+    if (opcode != spv::OpShiftRightLogical && opcode != spv::OpShiftRightArithmetic && opcode != spv::OpShiftLeftLogical) return amount;
+    const auto u32 = TypeU32(state);
+    const auto high = state.module.AllocateId();
+    state.module.AddFunction(spv::OpShiftRightLogical, u32, high, amount, ConstantU32(state, 5u));
+    const auto whole = state.module.AllocateId();
+    state.module.AddFunction(spv::OpShiftLeftLogical, u32, whole, high, ConstantU32(state, 5u));
+    const auto wrapped = state.module.AllocateId();
+    state.module.AddFunction(spv::OpISub, u32, wrapped, amount, whole);
+    return wrapped;
+}
+
 std::uint32_t Binary(SpirvEmitterState& state, std::uint32_t opcode, std::uint32_t type, std::uint32_t lhs, std::uint32_t rhs) {
+    rhs = WrapShiftAmountForHoneykrisp(state, opcode, type, rhs);
     const auto result = state.module.AllocateId();
     state.module.AddFunction(opcode, type, result, lhs, rhs);
     return result;

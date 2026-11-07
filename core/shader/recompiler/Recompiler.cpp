@@ -653,6 +653,7 @@ CompiledVariant emitVariant(const RecompileRequest& request, IrProgram& program)
     targetOptions.float32FlushToZero = HardwareFloat32Flush(request);
     targetOptions.float32DenormPreserve = request.target.float32DenormPreserve;
     targetOptions.fusedExactArithmetic = request.target.fusedExactArithmetic;
+    targetOptions.wrapShiftAmounts = request.target.wrapShiftAmounts;
     targetOptions.largePixelFunctionLdsBuffer = request.target.largePixelFunctionLdsBuffer;
     targetOptions.pixelFunctionStorageDwords = request.target.pixelFunctionStorageDwords;
     targetOptions.meshBarycentricPixel = request.shader.stage == ShaderStage::Fragment && request.graphics && request.graphics->mesh;

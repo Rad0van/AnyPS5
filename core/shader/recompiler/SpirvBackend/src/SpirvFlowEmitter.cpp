@@ -172,6 +172,31 @@ std::uint32_t EmitWaveMaskBranchCondition(SpirvValueEmitContext& ctx, const Bloc
     return result;
 }
 
+
+std::uint32_t EmitShiftByWrappedAmount(SpirvValueEmitContext& ctx, const IrValue& inst, spv::Op op) {
+    if (!ctx.state.wrapShiftAmounts) return 0;
+    const IrValue* amount = inst.Argument(1) != nullptr ? inst.Argument(1)->Resolve() : nullptr;
+    if (amount == nullptr || amount->Opcode() != IrOpcode::BitwiseAnd32) return 0;
+    std::size_t source = 2;
+    for (std::size_t index = 0; index < 2; index++) {
+        const IrValue* mask = amount->Argument(index) != nullptr ? amount->Argument(index)->Resolve() : nullptr;
+        if (mask != nullptr && mask->HasImmediate() && mask->ImmediateU32() == 31u) source = 1 - index;
+    }
+    if (source == 2) return 0;
+    auto& state = ctx.state;
+    const auto u32 = TypeU32(state);
+    const auto unmasked = ctx.Arg(*amount, source);
+    const auto high = state.module.AllocateId();
+    state.module.AddFunction(spv::OpShiftRightLogical, u32, high, unmasked, ConstantU32(state, 5u));
+    const auto whole = state.module.AllocateId();
+    state.module.AddFunction(spv::OpShiftLeftLogical, u32, whole, high, ConstantU32(state, 5u));
+    const auto wrapped = state.module.AllocateId();
+    state.module.AddFunction(spv::OpISub, u32, wrapped, unmasked, whole);
+    const auto result = state.module.AllocateId();
+    state.module.AddFunction(op, u32, result, ctx.Arg(inst, 0), wrapped);
+    return result;
+}
+
 std::uint32_t EmitBranchCondition(SpirvValueEmitContext& ctx, const BlockInfo& info) {
     const auto condition = info.terminator.condition;
     if (ctx.otherHalf == nullptr && IsWaveMaskBranch(condition)) {
@@ -403,9 +428,9 @@ void EmitDirectInstruction(SpirvValueEmitContext& ctx, const IrValue& inst) {
         case IrOpcode::IAbs32: return Invoke(EmitIAbs32, ctx, inst);
         case IrOpcode::ShiftLeftLogical32: return Invoke(EmitShiftLeftLogical32, ctx, inst);
         case IrOpcode::ShiftLeftLogical64: return Invoke(EmitShiftLeftLogical64, ctx, inst);
-        case IrOpcode::ShiftRightLogical32: return Invoke(EmitShiftRightLogical32, ctx, inst);
+        case IrOpcode::ShiftRightLogical32: if (const auto id = EmitShiftByWrappedAmount(ctx, inst, spv::OpShiftRightLogical)) { ctx.Define(inst, id); return; } return Invoke(EmitShiftRightLogical32, ctx, inst);
         case IrOpcode::ShiftRightLogical64: return Invoke(EmitShiftRightLogical64, ctx, inst);
-        case IrOpcode::ShiftRightArithmetic32: return Invoke(EmitShiftRightArithmetic32, ctx, inst);
+        case IrOpcode::ShiftRightArithmetic32: if (const auto id = EmitShiftByWrappedAmount(ctx, inst, spv::OpShiftRightArithmetic)) { ctx.Define(inst, id); return; } return Invoke(EmitShiftRightArithmetic32, ctx, inst);
         case IrOpcode::ShiftRightArithmetic64: return Invoke(EmitShiftRightArithmetic64, ctx, inst);
         case IrOpcode::BitwiseAnd32: return Invoke(EmitBitwiseAnd32, ctx, inst);
         case IrOpcode::BitwiseAnd64: return Invoke(EmitBitwiseAnd64, ctx, inst);
